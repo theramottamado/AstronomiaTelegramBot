@@ -28,7 +28,7 @@ func (a *Address) SetLongitude(lon string) {
 	a.Longitude = lon
 }
 
-func GetWeather(address string) (weather string) {
+func GetWeather(firstName, lastName, address string) (weather string) {
 	token := os.Getenv("API_TOKEN")
 	location := getLatLon(address)
 	formattedAddress, lat, lon := location.FormattedAddress, location.Latitude, location.Longitude
@@ -63,7 +63,7 @@ func GetWeather(address string) (weather string) {
 	weather = weatherArr["description"].(string)
 	weatherMain := result["main"].(map[string]interface{})
 	weatherTemp := weatherMain["temp"].(float64)
-	weather = fmt.Sprintf("Weather in %s is %s, with temperature of %0.2f degree Celsius.", formattedAddress, weather, weatherTemp)
+	weather = fmt.Sprintf("Hi %s %s!\n\nWeather in %s is %s, with temperature of %0.2f degree Celsius.", firstName, lastName, formattedAddress, weather, weatherTemp)
 	return weather
 }
 
