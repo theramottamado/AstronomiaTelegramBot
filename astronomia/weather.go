@@ -2,6 +2,7 @@ package astronomia
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -28,18 +29,19 @@ func (a *Address) SetLongitude(lon string) {
 	a.Longitude = lon
 }
 
-func GetWeather(firstName, lastName, address string) (weather string) {
+func GetWeather(firstName, lastName, address string) (weather string, err error) {
 	token := os.Getenv("API_TOKEN")
 	location := getLatLon(address)
 	formattedAddress, lat, lon := location.FormattedAddress, location.Latitude, location.Longitude
 	resp, err := http.Get("http://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&appid=" + token + "&units=metric")
 	if err != nil {
 		log.Println(err)
-		return "Network error!"
+		return "Network error!", errors.New("network error")
 	}
 	defer resp.Body.Close()
 	defer func() {
-		if err := recover(); err != nil {
+		err := recover()
+		if err != nil {
 			weather = "oops!"
 		}
 	}()
@@ -47,7 +49,7 @@ func GetWeather(firstName, lastName, address string) (weather string) {
 	// log.Println(body)
 	if err != nil {
 		log.Println(err)
-		return "oops!"
+		return "oops!", errors.New("oops")
 	}
 
 	var result map[string]interface{}
@@ -55,7 +57,7 @@ func GetWeather(firstName, lastName, address string) (weather string) {
 
 	if resp.StatusCode != 200 {
 		msg := result["message"]
-		return msg.(string)
+		return msg.(string), errors.New("received error status code")
 	}
 
 	weatherMap := result["weather"].([]interface{})
@@ -64,21 +66,22 @@ func GetWeather(firstName, lastName, address string) (weather string) {
 	weatherMain := result["main"].(map[string]interface{})
 	weatherTemp := weatherMain["temp"].(float64)
 	weather = fmt.Sprintf("Hi %s %s!\n\nWeather in %s is %s, with temperature of %0.2f degree Celsius.", firstName, lastName, formattedAddress, weather, weatherTemp)
-	return weather
+	return weather, nil
 }
 
-func getLatLon(address string) (geocode Address) {
+func getLatLon(address string) (geocode Address, err error) {
 	token := os.Getenv("MAPS_API_TOKEN")
 	address = strings.ReplaceAll(address, " ", "%20")
 	resp, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + address + "&key=" + token)
 	log.Println(resp)
 	if err != nil {
 		log.Println(err)
-		return geocode
+		return geocode, err
 	}
 	defer resp.Body.Close()
 	defer func() {
-		if err := recover(); err != nil {
+		err := recover()
+		if err != nil {
 			geocode.SetLatitude("")
 			geocode.SetLongitude("")
 			geocode.SetFormattedAddress("")
@@ -87,7 +90,7 @@ func getLatLon(address string) (geocode Address) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return geocode
+		return geocode, err
 	}
 
 	var result map[string]interface{}
@@ -101,5 +104,5 @@ func getLatLon(address string) (geocode Address) {
 	geocode.SetFormattedAddress(formattedAddress)
 	geocode.SetLatitude(lat)
 	geocode.SetLongitude(lon)
-	return geocode
+	return geocode, nil
 }
