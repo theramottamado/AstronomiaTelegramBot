@@ -68,11 +68,9 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Printf("[ERROR] %s", err)
 				msg.Text = "It appears that " + fmt.Sprintf("error %s", err) + ", try another location!"
+				log.Printf("[INFO] %s: %s", bot.Self.UserName, msg.Text)
 				bot.Send(msg)
-				return
 			}
-			bot.Send(msg)
-			return
 		}
 	} else if update.Message.IsCommand() {
 		delete(unames, LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID})
@@ -96,7 +94,8 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		default:
 			msg.Text = "I don't know that command"
 		}
+		log.Printf("[INFO] %s: %s", bot.Self.UserName, msg.Text)
 		bot.Send(msg)
-		return
 	}
+	return
 }
