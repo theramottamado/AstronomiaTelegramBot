@@ -14,7 +14,11 @@ type LinkedID struct {
 	GroupID int64
 }
 
-var Unames map[LinkedID]bool
+var unames map[LinkedID]bool
+
+func init() {
+	unames = map[LinkedID]bool{}
+}
 
 func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	token := os.Getenv("TOKEN")
@@ -47,16 +51,16 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
 	if update.Message.IsCommand() != true {
-		if _, ok := Unames[LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID}]; ok {
+		if _, ok := unames[LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID}]; ok {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 			go getWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text, weatherChan)
 			msg.Text = <-weatherChan
 			bot.Send(msg)
-			delete(Unames, LinkedID{update.Message.From.ID, update.Message.Chat.ID})
+			delete(unames, LinkedID{update.Message.From.ID, update.Message.Chat.ID})
 		}
 	} else if update.Message.IsCommand() {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
-		delete(Unames, LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID})
+		delete(unames, LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID})
 		switch update.Message.Command() {
 		case "start":
 			msg.Text = "Hello! Welcome to Astronomia Bot. Type /help to see all available commands."
@@ -71,8 +75,8 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		case "status":
 			msg.Text = "I'm ok."
 		case "weather":
-			if _, ok := Unames[LinkedID{update.Message.From.ID, update.Message.Chat.ID}]; !ok {
-				Unames[LinkedID{update.Message.From.ID, update.Message.Chat.ID}] = true
+			if _, ok := unames[LinkedID{update.Message.From.ID, update.Message.Chat.ID}]; !ok {
+				unames[LinkedID{update.Message.From.ID, update.Message.Chat.ID}] = true
 			}
 			msg.Text = "What is the address you want to know the weather of?"
 		default:
