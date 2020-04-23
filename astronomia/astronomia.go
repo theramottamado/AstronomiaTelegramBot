@@ -19,7 +19,6 @@ var unames map[LinkedID]bool = map[LinkedID]bool{}
 func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	token := os.Getenv("TOKEN")
 	webhookURL := os.Getenv("WEBHOOK_URL")
-	log.Println("wow")
 	if webhookURL == "" {
 		log.Panic("No webhook URL specified!")
 	}
@@ -46,8 +45,6 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 
 	update := bot.HandleUpdate(w, r)
 
-	weatherChan := make(chan string)
-
 	if update.Message.Text != "" {
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 	}
@@ -55,10 +52,9 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	if update.Message.IsCommand() != true {
 		if _, ok := unames[LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID}]; ok {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
-			go getWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text, weatherChan)
-			msg.Text = <-weatherChan
-			bot.Send(msg)
+			msg.Text = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text)
 			delete(unames, LinkedID{update.Message.From.ID, update.Message.Chat.ID})
+			bot.Send(msg)
 		}
 	} else if update.Message.IsCommand() {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
@@ -87,9 +83,4 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		bot.Send(msg)
 	}
 	return
-}
-
-func getWeather(firstName, lastName, address string, weatherChan chan string) {
-	msg := GetWeather(firstName, lastName, address)
-	weatherChan <- msg
 }
