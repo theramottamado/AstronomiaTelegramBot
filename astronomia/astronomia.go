@@ -23,6 +23,9 @@ func init() {
 func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	token := os.Getenv("TOKEN")
 	webhookURL := os.Getenv("WEBHOOK_URL")
+	if webhookURL == "" {
+		log.Panic("No webhook URL specified!")
+	}
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Panic(err)
