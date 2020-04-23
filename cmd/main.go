@@ -26,9 +26,7 @@ func Bot(token string) {
 	u.Timeout = 60
 
 	weatherChan := make(chan string)
-
 	updates, err := bot.GetUpdatesChan(u)
-
 	unames := map[LinkedID]bool{}
 
 	for update := range updates {
