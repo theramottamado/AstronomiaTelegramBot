@@ -33,35 +33,37 @@ func GetWeather(firstName, lastName, address string) (weather string, err error)
 	token := os.Getenv("API_TOKEN")
 	location, err := getLatLon(address)
 	if err != nil {
-		return "", errors.New("location not found")
+		return "", err
 	}
 	formattedAddress, lat, lon := location.FormattedAddress, location.Latitude, location.Longitude
 	resp, err := http.Get("http://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&appid=" + token + "&units=metric")
 	if err != nil {
-		log.Println(err)
-		return "Network error!", errors.New("network error")
+		err = errors.New("weather not found for this location")
+		return "Network error!", err
 	}
 	defer resp.Body.Close()
 	defer func() {
 		err := recover()
 		if err != nil {
-			weather = "oops!"
+			log.Printf("[ERROR] %s", err)
+			err = errors.New("bot crashed")
+			weather = ""
 		}
 	}()
+
+	if resp.StatusCode != 200 {
+		err = fmt.Errorf("bot received error status code %d", resp.StatusCode)
+		return "", err
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
-	// log.Println(body)
 	if err != nil {
-		log.Println(err)
-		return "oops!", errors.New("oops")
+		err = errors.New("bot received corrupt data")
+		return "", err
 	}
 
 	var result map[string]interface{}
 	json.Unmarshal([]byte(body), &result)
-
-	if resp.StatusCode != 200 {
-		msg := result["message"]
-		return msg.(string), errors.New("received error status code")
-	}
 
 	weatherMap := result["weather"].([]interface{})
 	weatherArr := weatherMap[0].(map[string]interface{})
@@ -75,16 +77,20 @@ func GetWeather(firstName, lastName, address string) (weather string, err error)
 func getLatLon(address string) (geocode Address, err error) {
 	token := os.Getenv("MAPS_API_TOKEN")
 	address = strings.ReplaceAll(address, " ", "%20")
-	resp, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + address + "&key=" + token)
-	log.Println(resp)
+	apiURL := "https://maps.googleapis.com/maps/api/geocode/json?address=" + address + "&key=" + token
+	log.Printf("[INFO] URL is: %s", apiURL)
+	resp, err := http.Get(apiURL)
+	log.Printf("[INFO] Response is: %s", resp.Header)
 	if err != nil {
-		log.Println(err)
+		err = errors.New("location not found")
 		return geocode, err
 	}
 	defer resp.Body.Close()
 	defer func() {
 		err := recover()
 		if err != nil {
+			log.Printf("[ERROR] %s", err)
+			err = errors.New("bot crashed")
 			geocode.SetLatitude("")
 			geocode.SetLongitude("")
 			geocode.SetFormattedAddress("")
@@ -92,7 +98,7 @@ func getLatLon(address string) (geocode Address, err error) {
 	}()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(err)
+		err = errors.New("bot received corrupt data")
 		return geocode, err
 	}
 

@@ -24,29 +24,29 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	token := os.Getenv("TOKEN")
 	webhookURL := os.Getenv("WEBHOOK_URL")
 	if webhookURL == "" {
-		log.Panic("No webhook URL specified!")
+		log.Panic("[FATAL] No webhook URL specified!")
 	}
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Panic(err)
+		log.Panic("[FATAL] Token invalid.")
 	}
 
-	bot.Debug = true
+	bot.Debug = false
 
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	log.Printf("[INFO] Authorized on account: %s", bot.Self.UserName)
 
 	_, err = bot.SetWebhook(tgbotapi.NewWebhook(webhookURL + "?" + bot.Token))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[FATAL] Bot crashed. Stacktrace: %s", err)
 	}
 	_, err = bot.GetWebhookInfo()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[FATAL] Bot crashed. Stacktrace: %s", err)
 	}
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Println("Got panic last time!")
+			log.Printf("[FATAL] Bot crashed. Stacktrace: %s", err)
 		}
 		w.WriteHeader(200)
 	}()
@@ -54,19 +54,20 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	update := bot.HandleUpdate(w, r)
 
 	if update.Message.Text != "" {
-		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+		log.Printf("[INFO] %s: %s", update.Message.From.UserName, update.Message.Text)
 	}
-	log.Printf("Length of map is: %d", len(unames))
+	log.Printf("[DEBUG] Length of map is: %d", len(unames))
 
 	if !update.Message.IsCommand() {
-		log.Printf("User ID: %d", update.Message.From.ID)
-		log.Printf("Chat ID: %d", update.Message.Chat.ID)
+		log.Printf("[DEBUG] User ID: %d", update.Message.From.ID)
+		log.Printf("[DEBUG] Chat ID: %d", update.Message.Chat.ID)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 		if _, ok := unames[LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID}]; ok {
-			msg.Text, err = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text)
 			delete(unames, LinkedID{update.Message.From.ID, update.Message.Chat.ID})
+			msg.Text, err = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text)
 			if err != nil {
-				msg.Text = "It appears that you bumped into " + fmt.Sprintf("error %s", err) + ", try another location!"
+				log.Printf("[ERROR] %s", err)
+				msg.Text = "It appears that " + fmt.Sprintf("error %s", err) + ", try another location!"
 				bot.Send(msg)
 				return
 			}
