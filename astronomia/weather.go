@@ -31,7 +31,10 @@ func (a *Address) SetLongitude(lon string) {
 
 func GetWeather(firstName, lastName, address string) (weather string, err error) {
 	token := os.Getenv("API_TOKEN")
-	location := getLatLon(address)
+	location, err := getLatLon(address)
+	if err != nil {
+		return "", errors.New("location not found")
+	}
 	formattedAddress, lat, lon := location.FormattedAddress, location.Latitude, location.Longitude
 	resp, err := http.Get("http://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&appid=" + token + "&units=metric")
 	if err != nil {
