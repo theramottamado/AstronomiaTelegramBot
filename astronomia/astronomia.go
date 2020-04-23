@@ -48,7 +48,9 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 
 	weatherChan := make(chan string)
 
-	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+	if update.Message.Text != "" {
+		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+	}
 
 	if update.Message.IsCommand() != true {
 		if _, ok := unames[LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID}]; ok {
