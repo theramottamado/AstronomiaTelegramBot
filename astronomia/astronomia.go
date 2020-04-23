@@ -14,12 +14,7 @@ type LinkedID struct {
 	GroupID int64
 }
 
-var unames map[LinkedID]bool
-
-func init() {
-	unames = map[LinkedID]bool{}
-	log.Println("Hello")
-}
+var unames map[LinkedID]bool = map[LinkedID]bool{}
 
 func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	token := os.Getenv("TOKEN")
