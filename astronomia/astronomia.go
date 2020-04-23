@@ -44,6 +44,10 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println("Got panic last time!")
+		}
 		w.WriteHeader(200)
 	}()
 
