@@ -60,12 +60,12 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 		if _, ok := unames[LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID}]; ok {
 			msg.Text, err = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text)
+			delete(unames, LinkedID{update.Message.From.ID, update.Message.Chat.ID})
 			if err != nil {
-				msg.Text = fmt.Sprintf("error %s", err)
+				msg.Text = "It appears that you bumped into " + fmt.Sprintf("error %s", err) + ", try another location!"
 				bot.Send(msg)
 				return
 			}
-			delete(unames, LinkedID{update.Message.From.ID, update.Message.Chat.ID})
 			bot.Send(msg)
 			return
 		}
