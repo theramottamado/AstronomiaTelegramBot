@@ -39,13 +39,13 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	info, err := bot.GetWebhookInfo()
+	_, err = bot.GetWebhookInfo()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if info.LastErrorDate != 0 {
-		log.Printf("[Telegram callback failed] %s", info.LastErrorMessage)
-	}
+	defer func() {
+		w.WriteHeader(200)
+	}()
 
 	update := bot.HandleUpdate(w, r)
 
