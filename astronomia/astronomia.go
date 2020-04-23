@@ -41,7 +41,7 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	if info.LastErrorDate != 0 {
-		log.Printf("[Telegram callback failed]%s", info.LastErrorMessage)
+		log.Printf("[Telegram callback failed] %s", info.LastErrorMessage)
 	}
 
 	update := bot.HandleUpdate(w, r)
