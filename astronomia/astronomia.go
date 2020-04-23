@@ -18,11 +18,13 @@ var unames map[LinkedID]bool
 
 func init() {
 	unames = map[LinkedID]bool{}
+	log.Println("Hello")
 }
 
 func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	token := os.Getenv("TOKEN")
 	webhookURL := os.Getenv("WEBHOOK_URL")
+	log.Println("wow")
 	if webhookURL == "" {
 		log.Panic("No webhook URL specified!")
 	}
