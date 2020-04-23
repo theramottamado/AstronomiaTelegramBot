@@ -70,7 +70,10 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 				msg.Text = "It appears that " + fmt.Sprintf("error %s", err) + ", try another location!"
 				log.Printf("[INFO] %s: %s", bot.Self.UserName, msg.Text)
 				bot.Send(msg)
+				return
 			}
+			log.Printf("[INFO] %s: %s", bot.Self.UserName, msg.Text)
+			bot.Send(msg)
 		}
 	} else if update.Message.IsCommand() {
 		delete(unames, LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID})
