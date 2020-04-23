@@ -87,7 +87,6 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		}
 		bot.Send(msg)
 	}
-	return
 }
 
 func getWeather(firstName, lastName, address string, weatherChan chan string) {
