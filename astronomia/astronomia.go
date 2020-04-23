@@ -32,7 +32,7 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	_, err = bot.SetWebhook(tgbotapi.NewWebhook(webhookURL))
+	_, err = bot.SetWebhook(tgbotapi.NewWebhook(webhookURL + "?" + bot.Token))
 	if err != nil {
 		log.Fatal(err)
 	}
