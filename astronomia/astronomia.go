@@ -87,7 +87,7 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Don't print out debug info from the library.
-	bot.Debug = false
+	bot.Debug = true
 
 	// Logging is fun!
 	logger.Log(logging.Entry{
