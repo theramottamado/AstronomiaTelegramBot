@@ -90,13 +90,13 @@ func GetWeather(firstName, lastName, address string) (weatherMessage string, err
 
 	// Get temperature, feels like, pressure.
 	weatherMainResult := result["main"].(map[string]interface{})
-	temperature := weatherMainResult["temp"]
-	feelsLike := weatherMainResult["feels_like"]
-	humidity := weatherMainResult["humidity"]
+	temperature := weatherMainResult["temp"].(float64)
+	feelsLike := weatherMainResult["feels_like"].(float64)
+	humidity := weatherMainResult["humidity"].(float64)
 
 	// Format weather message.
 	weatherMessage = fmt.Sprintf(
-		"Hi %s %s! Weather in %s is %s, with temperature of *%s\u00B0C*. It feels like *%s\u00B0C* with *%s%%* humidity.",
+		"Hi %s %s! Weather in %s is %s, with temperature of *%0.2f\u00B0C*. It feels like *%0.2f\u00B0C* with *%0.2f%%* humidity.",
 		firstName, lastName, formattedAddress, condition, temperature, feelsLike, humidity,
 	)
 	return weatherMessage, nil
