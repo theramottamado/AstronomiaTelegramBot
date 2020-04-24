@@ -12,168 +12,220 @@ import (
 	mrpb "google.golang.org/genproto/googleapis/api/monitoredres"
 )
 
+// LinkedID is a struct to save current UserID and ChatID of user.
 type LinkedID struct {
-	UserID  int
-	GroupID int64
+	FromID int
+	ChatID int64
 }
 
+// Global variables.
 var (
 	unames map[LinkedID]bool
 )
 
+// This should run on the start of deployment.
 func init() {
 	unames = map[LinkedID]bool{}
 }
 
+// AstronomiaBot runs as a Google Cloud Function.
 func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
+
+	// Always return 200 OK regardless of error. Side effect: Lost messages.
+	defer w.WriteHeader(200)
+
+	// Environment variables.
+	token := os.Getenv("TOKEN")
+	// webhookURL := os.Getenv("WEBHOOK_URL") // Not used
+	projectID := os.Getenv("GCP_PROJECT_ID")
+	functionName := os.Getenv("FUNCTION_NAME")
+
+	// Get context for GCP logging.
 	ctx := context.Background()
-	if os.Getenv("GCLOUD_PROJECT") == "" {
-		log.Panic("[FATAL] Not a gcloud project!")
+
+	// We need to specify if this is a GCP project or not.
+	if projectID == "" {
+		log.Panic("[FATAL] Not a GCP project!")
 	}
-	logClient, err := logging.NewClient(ctx, os.Getenv("GCLOUD_PROJECT"))
+	if functionName == "" {
+		log.Panic("[FATAL] Not a Google Cloud Function!")
+	}
+
+	// Initialize GCP client logger.
+	logClient, err := logging.NewClient(ctx, projectID)
 	if err != nil {
-		log.Panic("[FATAL] Not a gcloud project!")
+		log.Panicf("[FATAL] Stacktrace: %s!", err)
 	}
+
+	// Always close the client after function exited.
 	defer logClient.Close()
-	if os.Getenv("FUNCTION_NAME") == "" {
-		log.Panic("[FATAL] Not a cloud function!")
-	}
+
+	// Initialize logger from client.
 	logger := logClient.Logger(
-		"cloudfunctions.googleapis.com/cloud-functions",
+		"cloudfunctions.googleapis.com/cloud-functions", // This is the Log ID.
 		logging.CommonResource(&mrpb.MonitoredResource{
 			Labels: map[string]string{
-				"function_name": os.Getenv("FUNCTION_NAME"),
-				"project_id":    os.Getenv("GCP_PROJECT"),
+				"function_name": functionName, // GCF name.
+				"project_id":    projectID,    // GCP project ID.
 				"region":        "us-central1",
 			},
-			Type: "cloud_function",
+			Type: "cloud_function", // Because this is a GCF.
 		}),
 		logging.CommonLabels(map[string]string{
-			"execution_id": r.Header.Get("Function-Execution-Id"),
+			"execution_id": r.Header.Get("Function-Execution-Id"), // GCF execution ID.
 		}),
 	)
 
-	token := os.Getenv("TOKEN")
-	webhookURL := os.Getenv("WEBHOOK_URL")
-	if webhookURL == "" {
-		// log.Panic("[FATAL] No webhook URL specified!")
-		logger.Log(logging.Entry{
-			Severity: logging.Alert,
-			Payload:  "No webhook URL specified!",
-		})
-	}
+	// Initialize bot.
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		// log.Panic("[FATAL] Token invalid.")
+		// Logging is fun!
 		logger.Log(logging.Entry{
 			Severity: logging.Alert,
 			Payload:  "Token invalid.",
 		})
 	}
 
+	// Don't print out debug info from the library.
 	bot.Debug = false
 
-	// log.Printf("[INFO] Authorized on account: %s", bot.Self.UserName)
+	// Logging is fun!
 	logger.Log(logging.Entry{
-		Severity: logging.Debug,
-		Payload:  fmt.Sprintf("Authorized on account: %s", bot.Self.UserName),
+		Severity: logging.Notice,
+		Payload:  fmt.Sprintf("Bot %s started", bot.Self.UserName),
 	})
 
-	_, err = bot.SetWebhook(tgbotapi.NewWebhook(webhookURL + "?" + bot.Token))
+	/*** These blocks should not run.
+
+	// These following lines are kinda costly though, we should just not check and set webhook info from here.
+	// So I decided to comment out these part where we check and set webhook info.
+
+	// Check if webhook URL is specified.
+	if webhookURL == "" {
+		logger.Log(logging.Entry{
+			Severity: logging.Alert,
+			Payload:  "No webhook URL specified!",
+		})
+	}
+
+	// Set webhook config.
+	webhookConfig := tgbotapi.NewWebhook(webhookURL + "?" + bot.Token)
+
+	// Get webhook info. This is to prevent us set the webhook info for each invocation.
+	webhookInfo, err := bot.GetWebhookInfo()
 	if err != nil {
-		// log.Fatalf("[FATAL] Bot crashed. Stacktrace: %s", err)
 		logger.Log(logging.Entry{
 			Severity: logging.Critical,
 			Payload:  fmt.Sprintf("Bot crashed. Stacktrace: %s", err),
 		})
 	}
-	_, err = bot.GetWebhookInfo()
-	if err != nil {
-		// log.Fatalf("[FATAL] Bot crashed. Stacktrace: %s", err)
-		logger.Log(logging.Entry{
-			Severity: logging.Critical,
-			Payload:  fmt.Sprintf("Bot crashed. Stacktrace: %s", err),
-		})
-	}
-	defer func() {
-		err := recover()
+
+	// Set webhook url if it's not set.
+	if webhookInfo.URL != webhookConfig.URL.String() {
+		_, err = bot.SetWebhook(webhookConfig)
 		if err != nil {
-			// log.Printf("[FATAL] Bot crashed. Stacktrace: %s", err)
 			logger.Log(logging.Entry{
 				Severity: logging.Critical,
 				Payload:  fmt.Sprintf("Bot crashed. Stacktrace: %s", err),
 			})
 		}
-		w.WriteHeader(200)
+	}
+
+	***/
+
+	// Recover from panic, log the error.
+	defer func() {
+		err := recover()
+		if err != nil {
+			logger.Log(logging.Entry{
+				Severity: logging.Critical,
+				Payload:  fmt.Sprintf("Bot crashed. Stacktrace: %s", err),
+			})
+		}
 	}()
 
+	// Get new message, yay!
 	update := bot.HandleUpdate(w, r)
 
+	// Logs the message texts.
 	if update.Message.Text != "" {
-		// log.Printf("[INFO] %s: %s", update.Message.From.UserName, update.Message.Text)
 		logger.Log(logging.Entry{
 			Severity: logging.Info,
 			Payload:  fmt.Sprintf("%s: %s", update.Message.From.UserName, update.Message.Text),
 		})
 	}
-	// log.Printf("[DEBUG] Length of map is: %d", len(unames))
 
-	if !update.Message.IsCommand() {
-		// log.Printf("[DEBUG] User ID: %d", update.Message.From.ID)
-		// log.Printf("[DEBUG] Chat ID: %d", update.Message.Chat.ID)
+	// Check whether new message is a command or not.
+	if !update.Message.IsCommand() { // If not a command, then ...
+		// Initialize the reply
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
-		if _, ok := unames[LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID}]; ok {
+
+		// Check if this is a response of weather command.
+		if _, ok := unames[LinkedID{FromID: update.Message.From.ID, ChatID: update.Message.Chat.ID}]; ok {
+			// This is a response. Delete the user from the response queue.
 			delete(unames, LinkedID{update.Message.From.ID, update.Message.Chat.ID})
+
+			// Fun part: Get the current weather condition.
 			msg.Text, err = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text)
-			if err != nil {
-				// log.Printf("[ERROR] %s", err)
+			if err != nil { // Oops, weather not found for this location, or some error happened.
 				logger.Log(logging.Entry{
 					Severity: logging.Error,
 					Payload:  fmt.Sprintf("Error: %s", err),
 				})
-				msg.Text = "It appears that " + fmt.Sprintf("error %s", err) + ", try another location!"
-				// log.Printf("[INFO] %s: %s", bot.Self.UserName, msg.Text)
+
+				// Say sorry and spit out the error, even when it panicked lol.
+				msg.Text = "Thousand apologize!. It appears that " + msg.Text + ". Please try another location!"
 				logger.Log(logging.Entry{
 					Severity: logging.Info,
 					Payload:  fmt.Sprintf("%s: %s", bot.Self.UserName, msg.Text),
 				})
+
+				// Send the reply.
+				msg.ParseMode = "MarkdownV2"
 				bot.Send(msg)
 				return
 			}
-			// log.Printf("[INFO] %s: %s", bot.Self.UserName, msg.Text)
+
+			// Yay, we get the weather!
 			logger.Log(logging.Entry{
 				Severity: logging.Info,
 				Payload:  fmt.Sprintf("%s: %s", bot.Self.UserName, msg.Text),
 			})
+
+			// Send the reply of current weather.
 			bot.Send(msg)
 		}
-	} else if update.Message.IsCommand() {
-		delete(unames, LinkedID{UserID: update.Message.From.ID, GroupID: update.Message.Chat.ID})
+	} else if update.Message.IsCommand() { // You thought it was not a command, but it was me, a command!
+		// Bah, so you decided not to check the weather!
+		delete(unames, LinkedID{FromID: update.Message.From.ID, ChatID: update.Message.Chat.ID})
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
+
+		// What do you need me to do, my master?
 		switch update.Message.Command() {
-		case "start":
+		case "start": // Lame, but Gene asked for this and opened an issue!
 			msg.Text = "Hello! Welcome to Astronomia Bot. Type /help to see all available commands."
-		case "help":
+		case "help": // You really need help? Pathetic.
 			msg.Text = "Type /sayhi to say hi.\nType /status to get bot status.\nType /weather to get current weather information.\nType /help to see all available commands."
-		case "sayhi":
+		case "sayhi": // You want me to say hi to you?
+			// Check if the chat is in a group or not.
 			if update.Message.Chat.IsGroup() {
-				msg.Text = fmt.Sprintf("Hi %s!", update.Message.Chat.UserName)
+				msg.Text = fmt.Sprintf("Hi %s! What a nice group chat, innit?", update.Message.Chat.UserName)
 			} else {
 				msg.Text = fmt.Sprintf("Hi %s %s! Have a good day!", update.Message.Chat.FirstName, update.Message.Chat.LastName)
 			}
-		case "status":
-			msg.Text = "I'm ok."
-		case "weather":
+		case "status": // Do you really want to know my status? ;)
+			msg.Text = "I'm ok. Thanks for asking anyway. \U0001F642"
+		case "weather": // You asking for weather report?
 			unames[LinkedID{update.Message.From.ID, update.Message.Chat.ID}] = true
 			msg.Text = "What is the address you want to know the weather of?"
-		default:
-			msg.Text = "I don't know that command"
+		default: // Sorry I'm still dumb.
+			msg.Text = "I don't know that command."
 		}
-		// log.Printf("[INFO] %s: %s", bot.Self.UserName, msg.Text)
 		logger.Log(logging.Entry{
 			Severity: logging.Info,
 			Payload:  fmt.Sprintf("%s: %s", bot.Self.UserName, msg.Text),
 		})
+		// Send the reply.
 		bot.Send(msg)
 	}
 	return
