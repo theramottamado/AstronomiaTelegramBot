@@ -27,16 +27,19 @@ func init() {
 
 func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
+	if os.Getenv("GCLOUD_PROJECT") == "" {
+		log.Panic("[FATAL] Not a gcloud project!")
+	}
 	logClient, err := logging.NewClient(ctx, os.Getenv("GCLOUD_PROJECT"))
 	if err != nil {
-		log.Panic("[FATAL] Not a Gcloud project!")
+		log.Panic("[FATAL] Not a gcloud project!")
 	}
 	defer logClient.Close()
 	if os.Getenv("FUNCTION_NAME") == "" {
 		log.Panic("[FATAL] Not a cloud function!")
 	}
 	logger := logClient.Logger(
-		"cloudfunctions.googleapis.com/cloud-functions",
+		os.Getenv("FUNCTION_NAME"),
 		logging.CommonResource(&mrpb.MonitoredResource{
 			Labels: map[string]string{
 				"function_name": os.Getenv("FUNCTION_NAME"),
