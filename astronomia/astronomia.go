@@ -39,7 +39,7 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		log.Panic("[FATAL] Not a cloud function!")
 	}
 	logger := logClient.Logger(
-		os.Getenv("FUNCTION_NAME"),
+		"cloudfunctions.googleapis.com/cloud-functions",
 		logging.CommonResource(&mrpb.MonitoredResource{
 			Labels: map[string]string{
 				"function_name": os.Getenv("FUNCTION_NAME"),
