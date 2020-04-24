@@ -96,7 +96,7 @@ func GetWeather(firstName, lastName, address string) (weatherMessage string, err
 
 	// Format weather message.
 	weatherMessage = fmt.Sprintf(
-		"Hi %s %s\\! Weather in %s is %s, with temperature of *%0.2f\u00B0C*\\. It feels like *%0.2f\u00B0C* with *%.f%%* humidity\\.",
+		"Hi %s %s! Weather in %s is %s, with temperature of <b>%0.2f\u00B0C</b>. It feels like <b>%0.2f\u00B0C</b> with <b>%.f%%</b> humidity.",
 		firstName, lastName, formattedAddress, condition, temperature, feelsLike, humidity,
 	)
 	return weatherMessage, nil

@@ -192,7 +192,7 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 			})
 
 			// Send the reply of current weather.
-			msg.ParseMode = "MarkdownV2"
+			msg.ParseMode = "HTML"
 			bot.Send(msg)
 		}
 	} else if update.Message.IsCommand() { // You thought it was not a command, but it was me, a command!
