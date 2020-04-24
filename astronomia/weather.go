@@ -78,9 +78,9 @@ func getLatLon(address string) (geocode Address, err error) {
 	token := os.Getenv("MAPS_API_TOKEN")
 	address = strings.ReplaceAll(address, " ", "%20")
 	apiURL := "https://maps.googleapis.com/maps/api/geocode/json?address=" + address + "&key=" + token
-	log.Printf("[INFO] URL is: %s", apiURL)
+	// log.Printf("[INFO] URL is: %s", apiURL)
 	resp, err := http.Get(apiURL)
-	log.Printf("[INFO] Response is: %s", resp.Header)
+	// log.Printf("[INFO] Response is: %s", resp.Header)
 	if err != nil {
 		err = errors.New("location not found")
 		return geocode, err
@@ -89,7 +89,7 @@ func getLatLon(address string) (geocode Address, err error) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Printf("[ERROR] %s", err)
+			// log.Printf("[ERROR] %s", err)
 			err = errors.New("bot crashed")
 			geocode.SetLatitude("")
 			geocode.SetLongitude("")
