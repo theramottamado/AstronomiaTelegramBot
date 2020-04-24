@@ -53,9 +53,6 @@ func AstronomiaBot(w http.ResponseWriter, r *http.Request) {
 		}),
 	)
 
-	log.Println(r.Header)
-	log.Println(r.Header.Get("Function-Execution-Id"))
-
 	token := os.Getenv("TOKEN")
 	webhookURL := os.Getenv("WEBHOOK_URL")
 	if webhookURL == "" {
