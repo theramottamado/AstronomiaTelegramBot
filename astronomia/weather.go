@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	// "log"
 	"net/http"
 	"os"
 	"strings"
@@ -59,7 +58,7 @@ func GetWeather(firstName, lastName, address string) (weatherMessage string, err
 	defer func() {
 		err := recover()
 		if err != nil {
-			err = errors.New(fmt.Sprintf("bot crashed with stacktrace %s", err))
+			err = fmt.Errorf("bot crashed with stacktrace %s", err)
 			weatherMessage = "the bot crashed"
 		}
 	}()
