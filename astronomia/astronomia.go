@@ -118,6 +118,8 @@ func Bot(w http.ResponseWriter, r *http.Request) {
 		case "status":
 			msg.Text = "I'm ok. Thanks for asking anyway. \U0001F642"
 		case "weather":
+			msg.BaseChat.ReplyToMessageID = update.Message.MessageID
+			msg.ParseMode = "HTML"
 			if update.Message.CommandArguments() != "" {
 				msg.Text, err = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text)
 
@@ -137,8 +139,6 @@ func Bot(w http.ResponseWriter, r *http.Request) {
 		default:
 			msg.Text = "I don't know that command."
 		}
-
-		msg.ParseMode = "HTML"
 
 		logger.Log(logging.Entry{
 			Severity: logging.Info,
