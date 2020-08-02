@@ -131,6 +131,8 @@ func Bot(w http.ResponseWriter, r *http.Request) {
 					// Say sorry and spit out the error, even when it panicked lol.
 					msg.Text = "Thousand apologize!. It appears that " + msg.Text + ". Please try another location!"
 				}
+			} else {
+				msg.Text = "I don't know that location"
 			}
 		default:
 			msg.Text = "I don't know that command."
