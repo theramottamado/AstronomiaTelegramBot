@@ -121,7 +121,7 @@ func Bot(w http.ResponseWriter, r *http.Request) {
 			msg.BaseChat.ReplyToMessageID = update.Message.MessageID
 			msg.ParseMode = "HTML"
 			if update.Message.CommandArguments() != "" {
-				msg.Text, err = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.Text)
+				msg.Text, err = GetWeather(update.Message.Chat.FirstName, update.Message.Chat.LastName, update.Message.CommandArguments())
 
 				// Oops, weather not found for this location, or some error happened.
 				if err != nil {
