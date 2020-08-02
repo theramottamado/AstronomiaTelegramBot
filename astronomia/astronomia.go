@@ -138,6 +138,8 @@ func Bot(w http.ResponseWriter, r *http.Request) {
 			msg.Text = "I don't know that command."
 		}
 
+		msg.ParseMode = "HTML"
+
 		logger.Log(logging.Entry{
 			Severity: logging.Info,
 			Payload:  fmt.Sprintf("%s: %s", bot.Self.UserName, msg.Text),
